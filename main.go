@@ -1,25 +1,30 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 
-	"github.com/machinebox/graphql"
+	"github.com/PatrickMenoti/poc-graphql/options"
 )
 
-type HTTPEvent struct {
-	Status int `json:"status"`
-	Count  int `json:"count"`
-}
-
-type Response struct {
-	HTTPEvents []HTTPEvent `json:"httpEvents"`
-}
+var tokenvalue string
 
 func main() {
-	var tokenvalue string
+
+	fmt.Println("Select an option:")
+	fmt.Println("1. Top status codes")
+	fmt.Println("2. Top user agent")
+	fmt.Println("3. Total requests")
+
+	var choice int
+	fmt.Print("Enter your choice: ")
+	_, err := fmt.Scan(&choice)
+	if err != nil {
+		fmt.Println("Error reading input:", err)
+		os.Exit(1)
+	}
+
 	flag.StringVar(&tokenvalue, "token", "", "API token for authorization")
 	// Parse the command-line flags
 	flag.Parse()
@@ -30,53 +35,15 @@ func main() {
 		return
 	}
 
-	graphqlClient := graphql.NewClient("https://api.azionapi.net/events/graphql")
-
-	graphqlRequest := graphql.NewRequest(`
-	query Top10StatusCodes {
-		httpEvents(
-		  limit: 5
-		  filter: {
-			tsRange: { begin:"2024-01-20T10:10:10", end:"2024-01-26T10:10:10" }
-		  }
-		  aggregate: {count: status}
-		  groupBy: [status]
-		  orderBy: [count_DESC]
-		  )
-		{
-		  status
-		  count
-		}
-	  }
-`)
-	token := "Token " + tokenvalue
-
-	graphqlRequest.Header.Set("Authorization", token)
-
-	// var graphqlResponse interface{}
-	var response Response
-	if err := graphqlClient.Run(context.Background(), graphqlRequest, &response); err != nil {
-		panic(err)
+	switch choice {
+	case 1:
+		options.Option1(tokenvalue)
+	case 2:
+		options.Option2(tokenvalue)
+	case 3:
+		options.Option3(tokenvalue)
+	default:
+		fmt.Println("Invalid choice. Please enter 1 or 2.")
 	}
 
-	PrettyPrint(response)
-	// spew.Dump(response)
-	// fmt.Println(response)
-
-}
-
-// func init() {
-// 	flag.StringVar(&flagvar, "token", "", "personaltoken")
-// }
-
-// print the contents of the obj
-func PrettyPrint(data interface{}) {
-	var p []byte
-	//    var err := error
-	p, err := json.MarshalIndent(data, "", "\t")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("%s \n", p)
 }
